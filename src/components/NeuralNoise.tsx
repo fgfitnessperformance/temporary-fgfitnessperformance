@@ -2,129 +2,251 @@ import { useEffect, useRef } from 'react'
 
 const NeuralNoise = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const mouseRef = useRef({ x: 0, y: 0 })
   const animationRef = useRef<number | undefined>(undefined)
+  const glRef = useRef<WebGLRenderingContext | null>(null)
+  const uniformsRef = useRef<Record<string, WebGLUniformLocation | null>>({})
+  const pointerRef = useRef({
+    x: 0,
+    y: 0,
+    tX: 0,
+    tY: 0,
+  })
+
+  const vertexShaderSource = `
+    precision mediump float;
+
+    varying vec2 vUv;
+    attribute vec2 a_position;
+
+    void main() {
+        vUv = .5 * (a_position + 1.);
+        gl_Position = vec4(a_position, 0.0, 1.0);
+    }
+  `
+
+  // Gold/amber color palette for FG Fitness
+  const fragmentShaderSource = `
+    precision mediump float;
+
+    varying vec2 vUv;
+    uniform float u_time;
+    uniform float u_ratio;
+    uniform vec2 u_pointer_position;
+    uniform float u_scroll_progress;
+
+    vec2 rotate(vec2 uv, float th) {
+        return mat2(cos(th), sin(th), -sin(th), cos(th)) * uv;
+    }
+
+    float neuro_shape(vec2 uv, float t, float p) {
+        vec2 sine_acc = vec2(0.);
+        vec2 res = vec2(0.);
+        float scale = 8.;
+
+        for (int j = 0; j < 15; j++) {
+            uv = rotate(uv, 1.);
+            sine_acc = rotate(sine_acc, 1.);
+            vec2 layer = uv * scale + float(j) + sine_acc - t;
+            sine_acc += sin(layer) + 2.4 * p;
+            res += (.5 + .5 * cos(layer)) / scale;
+            scale *= (1.2);
+        }
+        return res.x + res.y;
+    }
+
+    void main() {
+        vec2 uv = .5 * vUv;
+        uv.x *= u_ratio;
+
+        vec2 pointer = vUv - u_pointer_position;
+        pointer.x *= u_ratio;
+        float p = clamp(length(pointer), 0., 1.);
+        p = .15 * pow(1. - p, 2.);
+
+        float t = .0003 * u_time;
+        vec3 color = vec3(0.);
+
+        float noise = neuro_shape(uv, t, p);
+
+        noise = 1.2 * pow(noise, 3.);
+        noise += pow(noise, 10.);
+        noise = max(.0, noise - .5);
+        noise *= (1. - length(vUv - .5));
+
+        // FG Gold/Amber color palette
+        color = vec3(1.0, 0.84, 0.0); // Base gold color (#FFD700)
+        color += vec3(0.7, 0.55, 0.0) * sin(3.0 * u_scroll_progress + 1.5); // Darker gold variation
+
+        color = color * noise;
+
+        gl_FragColor = vec4(color, noise);
+    }
+  `
+
+  const createShader = (gl: WebGLRenderingContext, sourceCode: string, type: number) => {
+    const shader = gl.createShader(type)
+    if (!shader) return null
+
+    gl.shaderSource(shader, sourceCode)
+    gl.compileShader(shader)
+
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.error("Shader compile error: " + gl.getShaderInfoLog(shader))
+      gl.deleteShader(shader)
+      return null
+    }
+
+    return shader
+  }
+
+  const createShaderProgram = (gl: WebGLRenderingContext, vertexShader: WebGLShader, fragmentShader: WebGLShader) => {
+    const program = gl.createProgram()
+    if (!program) return null
+
+    gl.attachShader(program, vertexShader)
+    gl.attachShader(program, fragmentShader)
+    gl.linkProgram(program)
+
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error("Shader program link error: " + gl.getProgramInfoLog(program))
+      return null
+    }
+
+    return program
+  }
+
+  const getUniforms = (gl: WebGLRenderingContext, program: WebGLProgram) => {
+    const uniforms: Record<string, WebGLUniformLocation | null> = {}
+    const uniformCount = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS)
+    for (let i = 0; i < uniformCount; i++) {
+      const uniformInfo = gl.getActiveUniform(program, i)
+      if (uniformInfo) {
+        uniforms[uniformInfo.name] = gl.getUniformLocation(program, uniformInfo.name)
+      }
+    }
+    return uniforms
+  }
+
+  const initShader = () => {
+    const canvas = canvasRef.current
+    if (!canvas) return null
+
+    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl") as WebGLRenderingContext | null
+    if (!gl) {
+      console.warn("WebGL not supported")
+      return null
+    }
+
+    const vertexShader = createShader(gl, vertexShaderSource, gl.VERTEX_SHADER)
+    const fragmentShader = createShader(gl, fragmentShaderSource, gl.FRAGMENT_SHADER)
+
+    if (!vertexShader || !fragmentShader) return null
+
+    const shaderProgram = createShaderProgram(gl, vertexShader, fragmentShader)
+    if (!shaderProgram) return null
+
+    uniformsRef.current = getUniforms(gl, shaderProgram)
+
+    const vertices = new Float32Array([-1., -1., 1., -1., -1., 1., 1., 1.])
+
+    const vertexBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW)
+
+    gl.useProgram(shaderProgram)
+
+    const positionLocation = gl.getAttribLocation(shaderProgram, "a_position")
+    gl.enableVertexAttribArray(positionLocation)
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
+
+    return gl
+  }
+
+  const resizeCanvas = () => {
+    const canvas = canvasRef.current
+    const gl = glRef.current
+    if (!canvas || !gl) return
+
+    const devicePixelRatio = Math.min(window.devicePixelRatio, 2)
+    canvas.width = window.innerWidth * devicePixelRatio
+    canvas.height = window.innerHeight * devicePixelRatio
+
+    const uRatio = uniformsRef.current.u_ratio
+    if (uRatio) {
+      gl.uniform1f(uRatio, canvas.width / canvas.height)
+    }
+    gl.viewport(0, 0, canvas.width, canvas.height)
+  }
+
+  const render = () => {
+    const gl = glRef.current
+    const uniforms = uniformsRef.current
+    const pointer = pointerRef.current
+
+    if (!gl) return
+
+    const currentTime = performance.now()
+
+    pointer.x += (pointer.tX - pointer.x) * 0.05
+    pointer.y += (pointer.tY - pointer.y) * 0.05
+
+    if (uniforms.u_time) gl.uniform1f(uniforms.u_time, currentTime)
+    if (uniforms.u_pointer_position) {
+      gl.uniform2f(uniforms.u_pointer_position, pointer.x / window.innerWidth, 1 - pointer.y / window.innerHeight)
+    }
+    if (uniforms.u_scroll_progress) {
+      gl.uniform1f(uniforms.u_scroll_progress, window.pageYOffset / (2 * window.innerHeight))
+    }
+
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+    animationRef.current = requestAnimationFrame(render)
+  }
+
+  const updateMousePosition = (x: number, y: number) => {
+    pointerRef.current.tX = x
+    pointerRef.current.tY = y
+  }
+
+  const handlePointerMove = (e: PointerEvent) => {
+    updateMousePosition(e.clientX, e.clientY)
+  }
+
+  const handleTouchMove = (e: TouchEvent) => {
+    updateMousePosition(e.touches[0].clientX, e.touches[0].clientY)
+  }
+
+  const handleClick = (e: MouseEvent) => {
+    updateMousePosition(e.clientX, e.clientY)
+  }
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+    glRef.current = initShader()
+    resizeCanvas()
+    render()
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const resize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-    }
-    resize()
-    window.addEventListener('resize', resize)
-
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseRef.current = { x: e.clientX, y: e.clientY }
-    }
-    window.addEventListener('mousemove', handleMouseMove)
-
-    // Neural network nodes
-    const nodes: { x: number; y: number; vx: number; vy: number; radius: number }[] = []
-    const nodeCount = 80
-
-    for (let i = 0; i < nodeCount; i++) {
-      nodes.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: (Math.random() - 0.5) * 0.5,
-        radius: Math.random() * 2 + 1
-      })
-    }
-
-    const animate = () => {
-      ctx.fillStyle = 'rgba(9, 9, 11, 0.1)' // fg-base with trail
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-      const mouse = mouseRef.current
-
-      // Update and draw nodes
-      nodes.forEach((node, i) => {
-        // Mouse attraction
-        const dx = mouse.x - node.x
-        const dy = mouse.y - node.y
-        const dist = Math.sqrt(dx * dx + dy * dy)
-
-        if (dist < 200) {
-          const force = (200 - dist) / 200 * 0.02
-          node.vx += dx * force * 0.01
-          node.vy += dy * force * 0.01
-        }
-
-        // Update position
-        node.x += node.vx
-        node.y += node.vy
-
-        // Damping
-        node.vx *= 0.99
-        node.vy *= 0.99
-
-        // Bounce off edges
-        if (node.x < 0 || node.x > canvas.width) node.vx *= -1
-        if (node.y < 0 || node.y > canvas.height) node.vy *= -1
-
-        // Keep in bounds
-        node.x = Math.max(0, Math.min(canvas.width, node.x))
-        node.y = Math.max(0, Math.min(canvas.height, node.y))
-
-        // Draw node with gold color
-        const glowIntensity = dist < 200 ? (200 - dist) / 200 : 0.3
-        ctx.beginPath()
-        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(255, 215, 0, ${0.3 + glowIntensity * 0.5})`
-        ctx.fill()
-
-        // Draw connections
-        nodes.forEach((other, j) => {
-          if (i >= j) return
-          const odx = other.x - node.x
-          const ody = other.y - node.y
-          const odist = Math.sqrt(odx * odx + ody * ody)
-
-          if (odist < 150) {
-            const opacity = (1 - odist / 150) * 0.2
-            ctx.beginPath()
-            ctx.moveTo(node.x, node.y)
-            ctx.lineTo(other.x, other.y)
-            ctx.strokeStyle = `rgba(255, 215, 0, ${opacity})`
-            ctx.lineWidth = 0.5
-            ctx.stroke()
-          }
-        })
-      })
-
-      // Draw glow around mouse
-      const gradient = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 150)
-      gradient.addColorStop(0, 'rgba(255, 215, 0, 0.1)')
-      gradient.addColorStop(1, 'rgba(255, 215, 0, 0)')
-      ctx.fillStyle = gradient
-      ctx.fillRect(mouse.x - 150, mouse.y - 150, 300, 300)
-
-      animationRef.current = requestAnimationFrame(animate)
-    }
-
-    animate()
+    window.addEventListener("resize", resizeCanvas)
+    window.addEventListener("pointermove", handlePointerMove)
+    window.addEventListener("touchmove", handleTouchMove)
+    window.addEventListener("click", handleClick)
 
     return () => {
-      window.removeEventListener('resize', resize)
-      window.removeEventListener('mousemove', handleMouseMove)
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)
       }
+      window.removeEventListener("resize", resizeCanvas)
+      window.removeEventListener("pointermove", handlePointerMove)
+      window.removeEventListener("touchmove", handleTouchMove)
+      window.removeEventListener("click", handleClick)
     }
   }, [])
 
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full"
-      style={{ background: '#09090b' }}
+      className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-90 md:opacity-95"
+      style={{ backgroundColor: '#09090b' }}
     />
   )
 }
