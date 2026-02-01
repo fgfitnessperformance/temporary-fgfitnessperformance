@@ -1,106 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FG Fitness Performance | Transformación en Curso</title>
-    
-    <!-- Fonts: Anton (Titulos) & Inter (Cuerpo) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS (CDN para prototipado rápido sin build step) -->
-    <script src="https://cdn.tailwindcss.com"><\/script>
-    
-    <!-- Configuración de Branding Industrial Void -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        fg: {
-                            base: '#09090b', // Zinc-950
-                            surface: '#18181b', // Zinc-900
-                            gold: '#FFD700', // Gold Standard
-                            goldDim: '#B39700',
-                            text: '#e4e4e7', // Zinc-200
-                            muted: '#71717a' // Zinc-500
-                        }
-                    },
-                    fontFamily: {
-                        display: ['Anton', 'sans-serif'],
-                        body: ['Inter', 'sans-serif'],
-                    },
-                    animation: {
-                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    }
-                }
-            }
-        }
-    <\/script>
-
-    <style>
-        /* Ajustes finos para renderizado de fuentes */
-        body {
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        .bg-grid {
-            background-size: 40px 40px;
-            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-        }
-    </style>
-</head>
-<body class="bg-fg-base text-fg-text h-screen w-full overflow-hidden flex flex-col relative font-body">
-
-    <!-- Fondo Ambientación -->
-    <div class="absolute inset-0 bg-grid z-0 pointer-events-none"><\/div>
-    <div class="absolute inset-0 bg-gradient-to-t from-fg-base via-transparent to-transparent z-0 pointer-events-none"><\/div>
-
-    <!-- Contenido Principal -->
-    <main class="flex-1 flex flex-col items-center justify-center p-6 relative z-10 w-full max-w-5xl mx-auto text-center">
-        
-        <!-- Logo Placeholder -->
-        <div class="mb-12 relative group">
-            <div class="absolute -inset-1 bg-fg-gold rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000"><\/div>
-            <div class="relative w-32 h-32 md:w-40 md:h-40 rounded-full bg-fg-surface border-2 border-fg-gold/30 flex items-center justify-center shadow-2xl">
-                <!-- SVG Icon Placeholder: Dumbbell/Monogram -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-fg-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="m6.5 6.5 11 11"/>
-                    <path d="m21 21-1-1"/>
-                    <path d="m3 3 1 1"/>
-                    <path d="m18 22 4-4"/>
-                    <path d="m2 6 4-4"/>
-                    <path d="m3 10 7-7"/>
-                    <path d="m14 21 7-7"/>
-                </svg>
-            </div>
-        </div>
-
-        <!-- Titular -->
-        <h1 class="font-display text-5xl md:text-7xl lg:text-8xl tracking-wider uppercase leading-tight mb-6">
-            NOSOTROS TAMBIÉN <br>
-            <span class="text-fg-gold">NOS TRANSFORMAMOS</span>
-        </h1>
-
-        <!-- Mensaje -->
-        <div class="h-1 w-24 bg-fg-gold mb-8 rounded-full"><\/div>
-        
-        <p class="text-lg md:text-xl text-fg-muted max-w-2xl leading-relaxed">
-            Estamos actualizando nuestra infraestructura digital. <br class="hidden md:block">
-            Preparando la mejor experiencia de <span class="text-white font-semibold">nutrición y entrenamiento</span> para tu rendimiento.
-        </p>
-
-    </main>
-
-    <!-- Footer Simple -->
-    <footer class="relative z-10 py-6 text-center border-t border-white/5 bg-fg-base/80 backdrop-blur-sm w-full">
-        <p class="text-fg-muted text-xs tracking-widest uppercase">
-            &copy; 2026 FG Fitness Performance. All Rights Reserved.
-        </p>
-    </footer>
-
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FG Fitness Performance | Transformacion en Curso</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
