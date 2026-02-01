@@ -1,16 +1,46 @@
 import logoWhite from './assets/logo-h-white.svg'
+import bgImage from './assets/bg/FG 6.png'
 import NeuralNoise from './components/NeuralNoise'
 
 function App() {
   return (
     <div className="bg-fg-base text-fg-text h-[100dvh] w-full overflow-hidden flex flex-col relative font-body">
-      {/* Neural Noise Background - extends to safe areas */}
-      <div className="absolute inset-0 w-full h-full overflow-hidden" style={{ top: 'env(safe-area-inset-top, 0)', bottom: 'env(safe-area-inset-bottom, 0)', marginTop: 'calc(-1 * env(safe-area-inset-top, 0))', marginBottom: 'calc(-1 * env(safe-area-inset-bottom, 0))' }}>
-        <NeuralNoise />
+      {/* Background Image - monochromatic with gold tint */}
+      <div
+        className="absolute inset-0 w-full h-full overflow-hidden"
+        style={{
+          top: 'env(safe-area-inset-top, 0)',
+          bottom: 'env(safe-area-inset-bottom, 0)',
+          marginTop: 'calc(-1 * env(safe-area-inset-top, 0))',
+          marginBottom: 'calc(-1 * env(safe-area-inset-bottom, 0))'
+        }}
+      >
+        <div
+          className="absolute inset-0 w-full h-full bg-cover bg-no-repeat"
+          style={{
+            backgroundImage: `url(${bgImage})`,
+            backgroundPosition: 'center 30%',
+            filter: 'grayscale(100%) sepia(20%) brightness(0.25) contrast(1.1)',
+          }}
+        />
+        {/* Gold color overlay */}
+        <div className="absolute inset-0 bg-fg-gold/5 mix-blend-overlay" />
+        {/* Neural Noise overlay - visible effect */}
+        <div className="absolute inset-0 opacity-90">
+          <NeuralNoise />
+        </div>
       </div>
 
       {/* Gradient overlay - more opaque on mobile */}
-      <div className="absolute inset-0 bg-gradient-to-t from-fg-base via-fg-base/60 to-fg-base/70 md:from-fg-base/80 md:via-transparent md:to-fg-base/40 z-[1] pointer-events-none" style={{ top: 'env(safe-area-inset-top, 0)', bottom: 'env(safe-area-inset-bottom, 0)', marginTop: 'calc(-1 * env(safe-area-inset-top, 0))', marginBottom: 'calc(-1 * env(safe-area-inset-bottom, 0))' }} />
+      <div
+        className="absolute inset-0 bg-gradient-to-t from-fg-base via-fg-base/60 to-fg-base/70 md:from-fg-base/80 md:via-transparent md:to-fg-base/40 z-[1] pointer-events-none"
+        style={{
+          top: 'env(safe-area-inset-top, 0)',
+          bottom: 'env(safe-area-inset-bottom, 0)',
+          marginTop: 'calc(-1 * env(safe-area-inset-top, 0))',
+          marginBottom: 'calc(-1 * env(safe-area-inset-bottom, 0))'
+        }}
+      />
 
       {/* Contenido Principal */}
       <main className="flex-1 min-h-0 flex flex-col items-center justify-center px-4 py-2 md:p-6 relative z-10 w-full max-w-5xl mx-auto text-center pt-[env(safe-area-inset-top)]">
@@ -21,14 +51,14 @@ function App() {
           <img
             src={logoWhite}
             alt="FG Fitness Performance"
-            className="relative w-32 md:w-80 lg:w-96 h-auto drop-shadow-[0_0_20px_rgba(255,215,0,0.4)] animate-float"
+            className="relative w-52 md:w-80 lg:w-96 h-auto drop-shadow-[0_0_20px_rgba(255,215,0,0.4)] animate-float"
           />
         </div>
 
-        {/* Titular - grande e impactante en movil */}
-        <h1 className="font-display text-[2.5rem] leading-[0.9] sm:text-5xl md:text-6xl lg:text-7xl tracking-wider uppercase md:leading-none mb-2 md:mb-6 px-2">
-          NOSOTROS TAMBIEN <br />
-          <span className="text-fg-gold animate-text-glow-smooth inline-block mt-1">NOS TRANSFORMAMOS</span>
+        {/* Titular - 2 lineas, grande e impactante */}
+        <h1 className="font-display text-[3.25rem] leading-[1.15] sm:text-5xl md:text-6xl lg:text-7xl tracking-tighter uppercase md:leading-none md:tracking-wide mb-2 md:mb-6 w-full px-2">
+          <span className="block">NOSOTROS TAMBIEN</span>
+          <span className="text-fg-gold animate-text-glow-smooth block">NOS TRANSFORMAMOS</span>
         </h1>
 
         {/* Linea decorativa animada */}
