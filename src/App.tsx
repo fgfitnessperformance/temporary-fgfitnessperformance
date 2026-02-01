@@ -1,5 +1,5 @@
 import logoWhite from './assets/logo-h-white.svg'
-import bgImage from './assets/bg/FG 6.png'
+import bgImage from './assets/bg/FG 6.webp'
 import NeuralNoise from './components/NeuralNoise'
 
 function App() {
